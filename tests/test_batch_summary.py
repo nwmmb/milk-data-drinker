@@ -6,15 +6,16 @@ import pytest
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "batch_summary_example.xls"
 
+pytestmark = pytest.mark.skipif(
+    not FIXTURE.exists(),
+    reason="optional local report fixture is not available",
+)
+
 
 @pytest.fixture
 def batch_df():
     from milk_data_drinker.timeless.batch_summary import read_file
     return read_file(str(FIXTURE))
-
-
-def test_fixture_exists():
-    assert FIXTURE.exists()
 
 
 def test_row_count(batch_df):

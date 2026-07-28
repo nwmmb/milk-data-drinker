@@ -72,3 +72,11 @@ source .venv/bin/activate
 pip install -e ".[dev,download]"
 pytest tests/
 ```
+
+### Local report fixtures
+
+Operational report examples used by parser tests belong in `tests/fixtures/`. That
+directory ignores all data files because they may contain PII/PHI or other non-public
+operational information. Fixture-backed tests skip when the local examples are absent.
+Do not force-add those files to git; add public synthetic fixtures separately only after
+an explicit privacy review.

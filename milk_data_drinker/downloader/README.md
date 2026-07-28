@@ -5,7 +5,7 @@ Downloads reports from Timeless MMBMS in time-windowed batches to avoid the syst
 ## Requirements
 
 - **Python 3.10+** (check with `python --version`)
-- **milk-data-drinker** with the download extra: `pip install "milk-data-drinker[download] @ git+https://github.com/nwmmb/milk-data-drinker.git"`
+- **milk-data-drinker** with the download extra: `pip install "milk-data-drinker[download] @ git+https://github.com/nwmmb/milk-data-drinker.git@v0.1.0"`
 - **Must run from your own computer** — Timeless is behind a firewall that blocks requests from other servers
 
 ## Quick start
@@ -33,16 +33,16 @@ The script walks you through an interactive menu:
 Preview what would be downloaded without making any requests:
 
 ```
-python download_timeless_reports.py --dry-run
+mdd-download --dry-run
 ```
 
 ## Setting up your cookie
 
-The script needs your Timeless session cookie to authenticate. There are four ways to provide it (checked in this order):
+The script needs your Timeless session cookie to authenticate. There are three supported ways to provide it (checked in this order):
 
 ### Option 1: cookie.txt (recommended)
 
-Create a file called `cookie.txt` in the same directory as the script and paste your cookie into it. This is the simplest option for repeat use — the script reads it automatically.
+Create a file called `cookie.txt` in the directory where you run `mdd-download` and paste your cookie into it. This is the simplest option for repeat use — the script reads it automatically.
 
 ```
 cookie.txt   ← just the raw cookie string, nothing else
@@ -50,22 +50,16 @@ cookie.txt   ← just the raw cookie string, nothing else
 
 This file is gitignored and will not be committed.
 
-### Option 2: Paste into the script
-
-1. Open `download_timeless_reports.py` in a text editor.
-2. Find the `COOKIE` variable near the top.
-3. Paste your cookie between the triple quotes.
-
-### Option 3: Environment variable
+### Option 2: Environment variable
 
 Set `TIMELESS_COOKIE` before running the script:
 
 ```
 set TIMELESS_COOKIE=your_cookie_here
-python download_timeless_reports.py
+mdd-download
 ```
 
-### Option 4: Interactive prompt
+### Option 3: Interactive prompt
 
 If no cookie is found via any of the above methods, you'll be prompted to paste one with instructions on where to find it.
 

@@ -12,10 +12,14 @@ from milk_data_drinker.timeless.milk_depots import read_file
 
 _FIXTURE = Path(__file__).resolve().parent / "fixtures" / "milk_depots_example.csv"
 
+pytestmark = pytest.mark.skipif(
+    not _FIXTURE.exists(),
+    reason="optional local report fixture is not available",
+)
+
 
 @pytest.fixture(scope="module")
 def df():
-    assert _FIXTURE.exists(), f"missing test fixture: {_FIXTURE}"
     return read_file(str(_FIXTURE))
 
 
