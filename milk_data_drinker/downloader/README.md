@@ -4,20 +4,23 @@ Downloads reports from Timeless MMBMS in time-windowed batches to avoid the syst
 
 ## Requirements
 
-- **Python 3.10+** (check with `python --version`)
-- **milk-data-drinker** with the download extra: `pip install "milk-data-drinker[download] @ git+https://github.com/nwmmb/milk-data-drinker.git@v0.1.0"`
+- **Python 3.10+** installed on the local computer
+- A downloaded or cloned copy of the `milk-data-drinker` repository
 - **Must run from your own computer** — Timeless is behind a firewall that blocks requests from other servers
 
-## Quick start
+## Quick start on Windows
 
-```
-mdd-download
-```
+1. Extract the downloaded repository to a normal folder.
+2. Double-click `run-downloader.bat` in the repository root.
 
-Or:
+On its first run, the launcher creates a private `.venv` folder and installs all
+dependencies inside it. Later runs reuse that environment. It does not install the
+package or dependencies into the machine-wide Python environment.
 
-```
-python -m milk_data_drinker.downloader
+From Command Prompt, the equivalent command is:
+
+```bat
+run-downloader.bat
 ```
 
 The script walks you through an interactive menu:
@@ -32,9 +35,22 @@ The script walks you through an interactive menu:
 
 Preview what would be downloaded without making any requests:
 
+```bat
+run-downloader.bat --dry-run
 ```
-mdd-download --dry-run
+
+### Manual virtual-environment setup
+
+If you do not want to use the launcher:
+
+```bat
+py -3 -m venv .venv
+.venv\Scripts\python.exe -m pip install -e ".[download]"
+.venv\Scripts\python.exe -m milk_data_drinker.downloader
 ```
+
+The `pip` command above runs through `.venv\Scripts\python.exe`, so it installs
+only inside the repository virtual environment.
 
 ## Setting up your cookie
 
@@ -42,7 +58,7 @@ The script needs your Timeless session cookie to authenticate. There are three s
 
 ### Option 1: cookie.txt (recommended)
 
-Create a file called `cookie.txt` in the directory where you run `mdd-download` and paste your cookie into it. This is the simplest option for repeat use — the script reads it automatically.
+Create a file called `cookie.txt` in the repository root beside `run-downloader.bat`, and paste your cookie into it. This is the simplest option for repeat use — the script reads it automatically.
 
 ```
 cookie.txt   ← just the raw cookie string, nothing else
@@ -56,7 +72,7 @@ Set `TIMELESS_COOKIE` before running the script:
 
 ```
 set TIMELESS_COOKIE=your_cookie_here
-mdd-download
+run-downloader.bat
 ```
 
 ### Option 3: Interactive prompt

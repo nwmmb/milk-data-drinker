@@ -2,17 +2,44 @@
 
 Parse Timeless MMBMS, Delta Lactoscope analyzer, and Jotform report files into normalized pandas DataFrames with canonical column names.
 
-## Installation
+## Timeless downloader quick start
 
-```bash
-pip install "milk-data-drinker @ git+https://github.com/nwmmb/milk-data-drinker.git@v0.1.0"
+On Windows:
+
+1. Download or clone this repository and extract it to a normal folder.
+2. Double-click `run-downloader.bat`.
+
+The launcher creates `.venv` inside the repository, installs the downloader and its
+dependencies only inside that environment, and starts the interactive menu. It reuses
+the same environment on later runs; nothing is installed into the machine-wide Python.
+
+To preview a run from Command Prompt without downloading reports:
+
+```bat
+run-downloader.bat --dry-run
 ```
 
-To include the Timeless report downloader:
+### Manual virtual-environment setup
+
+Windows:
+
+```bat
+py -3 -m venv .venv
+.venv\Scripts\python.exe -m pip install -e ".[download]"
+.venv\Scripts\python.exe -m milk_data_drinker.downloader
+```
+
+macOS or Linux:
 
 ```bash
-pip install "milk-data-drinker[download] @ git+https://github.com/nwmmb/milk-data-drinker.git@v0.1.0"
+python3 -m venv .venv
+.venv/bin/python -m pip install -e ".[download]"
+.venv/bin/python -m milk_data_drinker.downloader
 ```
+
+These commands do use `pip`, because Python dependencies still need to be installed,
+but the selected Python executable belongs to `.venv`; the global environment is not
+changed.
 
 ## Usage
 
@@ -31,16 +58,10 @@ results = milk_data_drinker.read_directory("path/to/reports/")
 
 ### Timeless report downloader
 
-After installing with the `[download]` extra:
+From the downloaded repository, use the launcher:
 
-```bash
-mdd-download
-```
-
-Or:
-
-```bash
-python -m milk_data_drinker.downloader
+```bat
+run-downloader.bat
 ```
 
 The downloader walks you through an interactive menu to download Timeless MMBMS reports in time-windowed batches (weekly, monthly, quarterly) to avoid the system hanging on large exports. See `milk_data_drinker/downloader/README.md` for full documentation.
@@ -67,10 +88,9 @@ Report type is auto-detected by directory name, filename, or column fingerprinti
 ```bash
 git clone git@github.com:nwmmb/milk-data-drinker.git
 cd milk-data-drinker
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev,download]"
-pytest tests/
+python3 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev,download]"
+.venv/bin/python -m pytest tests/
 ```
 
 ### Local report fixtures
