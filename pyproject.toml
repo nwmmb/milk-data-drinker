@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "milk-data-drinker"
+dynamic = ["version"]
+description = "Parse Timeless MMBMS, Lactoscope analyzer, and Jotform report files into normalized pandas DataFrames"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas",
+    "openpyxl",
+    "xlrd",
+    "lxml",
+]
+
+[project.optional-dependencies]
+download = ["requests"]
+dev = ["pytest"]
+
+[project.scripts]
+mdd-download = "milk_data_drinker.downloader:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "milk_data_drinker._version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["milk_data_drinker*"]
