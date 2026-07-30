@@ -1,0 +1,5 @@
+# Local report fixtures may contain operational data or PII/PHI.
+# Keep every data file in this directory untracked.
+*
+!.gitignore
+!README.md
