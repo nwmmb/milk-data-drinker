@@ -13,8 +13,9 @@ if not exist ".venv\Scripts\python.exe" (
     if errorlevel 1 goto :setup_error
 )
 
-if not exist ".venv\.mdd-packaged-v2" goto :install
-".venv\Scripts\python.exe" -I -c "import milk_data_drinker, requests, tkcalendar" >nul 2>nul
+if exist ".venv\.mdd-packaged-v2" goto :old_environment
+if not exist ".venv\.timeless-downloader-v1" goto :install
+".venv\Scripts\python.exe" -I -c "import timeless_downloader, requests, tkcalendar" >nul 2>nul
 if errorlevel 1 goto :install
 goto :launch
 
@@ -22,11 +23,18 @@ goto :launch
 echo Installing downloader dependencies inside .venv...
 ".venv\Scripts\python.exe" -m pip install ".[download]"
 if errorlevel 1 goto :setup_error
-type nul > ".venv\.mdd-packaged-v2"
+type nul > ".venv\.timeless-downloader-v1"
 
 :launch
-".venv\Scripts\python.exe" -I -m milk_data_drinker.downloader %*
+".venv\Scripts\python.exe" -I -m timeless_downloader %*
 exit /b %errorlevel%
+
+:old_environment
+echo.
+echo This is a renamed downloader-only release.
+echo Delete the .venv folder, then run this launcher again.
+pause
+exit /b 1
 
 :setup_error
 echo.

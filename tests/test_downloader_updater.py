@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from milk_data_drinker.downloader.updater import (
+from timeless_downloader.updater import (
     UpdateError,
     UpdateInfo,
     check_for_update,
@@ -13,8 +13,8 @@ from milk_data_drinker.downloader.updater import (
 
 
 WHEEL_URL = (
-    "https://github.com/nwmmb/milk-data-drinker/releases/download/"
-    "v0.2.0/milk_data_drinker-0.2.0-py3-none-any.whl"
+    "https://github.com/nwmmb/timeless-downloader-utility/releases/download/"
+    "v0.2.0/timeless_downloader_utility-0.2.0-py3-none-any.whl"
 )
 
 
@@ -26,7 +26,7 @@ def release(tag="v0.2.0", assets=None):
         if assets is not None
         else [
             {
-                "name": "milk_data_drinker-0.2.0-py3-none-any.whl",
+                "name": "timeless_downloader_utility-0.2.0-py3-none-any.whl",
                 "browser_download_url": WHEEL_URL,
             }
         ],
@@ -50,7 +50,7 @@ def test_wheel_selection_rejects_nonofficial_urls():
     malicious = release(
         assets=[
             {
-                "name": "milk_data_drinker-9.9.9-py3-none-any.whl",
+                "name": "timeless_downloader_utility-9.9.9-py3-none-any.whl",
                 "browser_download_url": "https://example.com/bad.whl",
             }
         ]
@@ -108,6 +108,6 @@ def test_restart_uses_isolated_mode():
     assert calls == [
         (
             "python.exe",
-            ["python.exe", "-I", "-m", "milk_data_drinker.downloader"],
+            ["python.exe", "-I", "-m", "timeless_downloader"],
         )
     ]

@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import urlparse
 
-from .._version import __version__
+from ._version import __version__
 
 RELEASES_URL = (
-    "https://api.github.com/repos/nwmmb/milk-data-drinker/releases/latest"
+    "https://api.github.com/repos/nwmmb/timeless-downloader-utility/releases/latest"
 )
 TIMEOUT = 5
 
@@ -52,7 +52,7 @@ def _is_official_wheel_url(url: str) -> bool:
         parsed.scheme == "https"
         and parsed.hostname == "github.com"
         and parsed.path.startswith(
-            "/nwmmb/milk-data-drinker/releases/download/"
+            "/nwmmb/timeless-downloader-utility/releases/download/"
         )
         and Path(parsed.path).name.endswith(".whl")
     )
@@ -63,7 +63,7 @@ def find_wheel_url(release: dict) -> str | None:
         name = str(asset.get("name", ""))
         url = str(asset.get("browser_download_url", ""))
         if (
-            name.startswith("milk_data_drinker-")
+            name.startswith("timeless_downloader_utility-")
             and name.endswith(".whl")
             and _is_official_wheel_url(url)
         ):
@@ -138,5 +138,5 @@ def restart_application(
     """Replace the current process with an isolated-mode GUI process."""
     execv(
         executable,
-        [executable, "-I", "-m", "milk_data_drinker.downloader"],
+        [executable, "-I", "-m", "timeless_downloader"],
     )

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from milk_data_drinker.downloader.controller import DownloadController
-from milk_data_drinker.downloader.core import (
+from timeless_downloader.controller import DownloadController
+from timeless_downloader.core import (
     DownloadEvent,
     DownloadResult,
     DownloadSettings,

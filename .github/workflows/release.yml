@@ -25,7 +25,22 @@ jobs:
       - name: Build wheel
         run: |
           pip install build
+          rm -rf build dist *.egg-info
           python -m build --wheel
+
+      - name: Validate downloader-only wheel
+        run: |
+          python - <<'PY'
+          import glob
+          import zipfile
+
+          wheel = glob.glob("dist/*.whl")
+          assert len(wheel) == 1, wheel
+          with zipfile.ZipFile(wheel[0]) as archive:
+              names = archive.namelist()
+          assert not any(name.startswith("milk_data_drinker/") for name in names)
+          assert "timeless_downloader/source_format.py" in names
+          PY
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

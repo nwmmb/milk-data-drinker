@@ -1,108 +1,122 @@
-# milk-data-drinker
+# Timeless Downloader Utility
 
-Parse Timeless MMBMS, Delta Lactoscope analyzer, and Jotform report files into normalized pandas DataFrames with canonical column names.
+Downloads Timeless MMBMS reports in bounded date windows so large exports do not
+hang the Timeless reporting interface. This repository is a local staff utility; it
+does not connect to Azure, upload files, or transform reports into nwmmb-db's
+canonical schema.
 
-## Timeless downloader quick start
+The repository is published at
+[`nwmmb/timeless-downloader-utility`](https://github.com/nwmmb/timeless-downloader-utility).
+Release `v0.2.0` is the first downloader-only release under this name. GitHub retains
+the history and redirects from the former `nwmmb/milk-data-drinker` URL.
 
-On Windows:
+## Windows quick start
 
-1. Download or clone this repository and extract it to a normal folder.
+1. Download and extract a fresh copy of the repository.
 2. Double-click `run-downloader.bat`.
 
-The launcher creates `.venv` inside the repository, installs the downloader and its
-dependencies only inside that environment, and opens the graphical interface. It reuses
-the same environment on later runs; nothing is installed into the machine-wide Python.
+The launcher creates a private `.venv`, installs the utility and its dependencies,
+then opens the graphical interface. Nothing is installed into the machine-wide
+Python environment.
 
-For a text-mode CLI instead of the GUI:
+This release changes both the distribution and Python namespace. If an older copy
+already has a `.venv`, delete that `.venv` or start from a fresh download. There is
+no bridge release from `milk-data-drinker`.
+
+For the text interface:
 
 ```bat
 run-downloader.bat --cli
 ```
 
-To preview a run without downloading reports:
+For a preview with no requests or output files:
 
 ```bat
 run-downloader.bat --dry-run
 ```
 
-### Manual virtual-environment setup
+## Commands
 
-Windows:
+The primary commands are:
 
-```bat
-py -3 -m venv .venv
-.venv\Scripts\python.exe -m pip install -e ".[download]"
-.venv\Scripts\mdd-download.exe
-```
+- `timeless-download` — graphical interface
+- `timeless-download-cli` — interactive text interface
 
-macOS or Linux:
+For `v0.2.0` only, `mdd-download` and `mdd-download-cli` remain as deprecated
+aliases. New shortcuts and documentation should use the `timeless-*` names.
+
+Manual virtual-environment setup:
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[download]"
-.venv/bin/mdd-download
+.venv/bin/timeless-download
 ```
 
-These commands do use `pip`, because Python dependencies still need to be installed,
-but the selected Python executable belongs to `.venv`; the global environment is not
-changed.
+## What it downloads
 
-## Usage
+The utility supports Donor Information, Deposit Record, Dispensation, Wastage,
+and Batch Summary reports. It downloads each report in weekly, monthly,
+quarterly, semi-annual, or annual windows and automatically retries a timed-out
+window one day at a time.
 
-### As a library
+Individual `.xls` files remain source-faithful: original Timeless headers and
+ordered columns are retained. Only download-format recovery occurs, such as
+reading HTML files saved with an `.xls` extension and converting Batch Summary
+preview JSON into an equivalent source table. See
+[Source formats](docs/source-formats.md) for the exact profiles and quirks.
 
-```python
-import milk_data_drinker
+Canonical mappings and ingestion behavior belong to
+[`nwmmb-db`](https://github.com/nwmmb/nwmmb-db), not this utility.
 
-# Parse a single report file (auto-detects report type)
-df = milk_data_drinker.read_file("path/to/report.xls")
+## Combined workbooks
 
-# Parse all supported files in a directory tree
-results = milk_data_drinker.read_directory("path/to/reports/")
-# returns {report_type: DataFrame}
-```
+Combination is deliberately strict. Every input must:
 
-### Timeless report downloader
+- match the selected report type's positive source-schema profile; and
+- have exactly the same columns in exactly the same order.
 
-From the downloaded repository, use the launcher:
+The utility fails the combination if either condition is false. It never builds a
+union schema.
 
-```bat
-run-downloader.bat
-```
+The combined rows are written to the first worksheet. A hidden worksheet named
+`_timeless_downloader_metadata` records:
 
-The downloader provides a graphical interface (with a text-mode CLI fallback) for downloading Timeless MMBMS reports in time-windowed batches (weekly, monthly, quarterly) to avoid the system hanging on large exports. See `milk_data_drinker/downloader/README.md` for full documentation.
+- `artifact_type=combined`
+- `report_type=<selected type>`
+- `format_version=1`
 
-## Supported report types
+Combined workbooks are local-use artifacts. Do not upload them for nwmmb-db
+ingestion; nwmmb-db rejects both the `_combined_` filename marker and the hidden
+metadata marker.
 
-| Report type | Source system | Parser module |
-|---|---|---|
-| `analyzer` | Delta Lactoscope | `analyzer/reader.py` |
-| `deposit_record` | Timeless MMBMS | `timeless/deposit_record.py` |
-| `dispensation` | Timeless MMBMS | `timeless/dispensation.py` |
-| `donor_tracking` | Timeless MMBMS | `timeless/donor_tracking.py` |
-| `donor_approval` | Timeless MMBMS | `timeless/donor_approval.py` |
-| `donor_information` | Timeless MMBMS | `timeless/donor_information.py` |
-| `donor_feedback` | Jotform | `jotform/feedback_survey.py` |
-| `milk_depot` | Timeless MMBMS | `timeless/milk_depots.py` |
-| `wastage_report` | Timeless MMBMS | `timeless/wastage.py` |
-| `batch_summary` | Timeless MMBMS | `timeless/batch_summary.py` |
+## Authentication and privacy
 
-Report type is auto-detected by directory name, filename, or column fingerprinting. See [docs/report-types.md](docs/report-types.md) for original column schemas, ingestion transforms, and known quirks per report type.
+The utility must run from the normal local network because Timeless blocks server
+traffic. It reads a Timeless session cookie from `cookie.txt`, the
+`TIMELESS_COOKIE` environment variable, or the saved GUI value. `cookie.txt`,
+`.venv`, `downloads`, and build output are gitignored.
+
+Report files may contain PII/PHI. Never commit downloads or copy their contents
+into issues, logs, tests, or third-party tools. Tests use synthetic records only.
+
+## Updating
+
+The GUI checks the latest release at
+`nwmmb/timeless-downloader-utility` and accepts only a wheel hosted on that
+repository's GitHub Releases page. `Update Now` installs the wheel into the
+launcher's private `.venv` and restarts `timeless_downloader` in isolated mode.
 
 ## Development
 
 ```bash
-git clone git@github.com:nwmmb/milk-data-drinker.git
-cd milk-data-drinker
+git clone git@github.com:nwmmb/timeless-downloader-utility.git
+cd timeless-downloader-utility
 python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[dev,download]"
 .venv/bin/python -m pytest tests/
 ```
 
-### Local report fixtures
-
-Operational report examples used by parser tests belong in `tests/fixtures/`. That
-directory ignores all data files because they may contain PII/PHI or other non-public
-operational information. Fixture-backed tests skip when the local examples are absent.
-Do not force-add those files to git; add public synthetic fixtures separately only after
-an explicit privacy review.
+Tagged releases run the tests, build the
+`timeless_downloader_utility-<version>-py3-none-any.whl` wheel, and attach it to a
+GitHub Release.

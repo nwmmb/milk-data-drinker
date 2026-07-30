@@ -1,1 +1,1 @@
-"""Minimal conftest for milk_data_drinker parser tests."""
+"""Shared setup for downloader-only tests."""

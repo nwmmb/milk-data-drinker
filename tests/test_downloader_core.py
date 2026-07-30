@@ -6,9 +6,10 @@ from pathlib import Path
 
 import pytest
 import requests
+from openpyxl import load_workbook
 
-from milk_data_drinker.downloader import core
-from milk_data_drinker.downloader.core import (
+from timeless_downloader import core
+from timeless_downloader.core import (
     DownloadSettings,
     calendar_ranges,
     date_ranges,
@@ -315,3 +316,75 @@ def test_combine_runs_only_when_selected(tmp_path, monkeypatch):
     )
     assert result.combined_file is None
     assert calls == []
+
+
+def _deposit_source(path, columns=None, deposit_id="DEP000001"):
+    columns = columns or [
+        "Deposit", "Donor/Milk Bank", "Expiry Date", "Volume Remaining (mL)"
+    ]
+    rows = [
+        {
+            "Deposit": deposit_id,
+            "Donor/Milk Bank": "DON000001: Synthetic Donor",
+            "Expiry Date": "2027-01-01",
+            "Volume Remaining (mL)": 100,
+        },
+        {"Deposit": "Summary"},
+        {"Deposit": "Total"},
+    ]
+    import pandas as pd
+
+    pd.DataFrame(rows, columns=columns).to_csv(path, index=False)
+
+
+def test_strict_combine_preserves_order_and_writes_hidden_metadata(tmp_path):
+    first = tmp_path / "deposit_record_first.xls"
+    second = tmp_path / "deposit_record_second.xls"
+    _deposit_source(first, deposit_id="DEP000001")
+    _deposit_source(second, deposit_id="DEP000002")
+
+    output = core.combine_files(
+        "deposit_record",
+        [first, second],
+        date(2026, 7, 1),
+        date(2026, 7, 31),
+        tmp_path,
+    )
+
+    workbook = load_workbook(output, data_only=True)
+    assert workbook.sheetnames[0] == "Combined Data"
+    assert workbook["_timeless_downloader_metadata"].sheet_state == "hidden"
+    metadata = dict(workbook["_timeless_downloader_metadata"].values)
+    assert metadata == {
+        "artifact_type": "combined",
+        "report_type": "deposit_record",
+        "format_version": "1",
+    }
+    assert [cell.value for cell in workbook["Combined Data"][1]] == [
+        "Deposit", "Donor/Milk Bank", "Expiry Date", "Volume Remaining (mL)"
+    ]
+    workbook.close()
+
+
+def test_strict_combine_rejects_ordered_column_mismatch(tmp_path):
+    first = tmp_path / "first.xls"
+    second = tmp_path / "second.xls"
+    columns = ["Deposit", "Donor/Milk Bank", "Expiry Date", "Volume Remaining (mL)"]
+    _deposit_source(first, columns)
+    _deposit_source(second, list(reversed(columns)))
+    with pytest.raises(ValueError, match="ordered source columns differ"):
+        core.combine_files(
+            "deposit_record", [first, second], date(2026, 7, 1), date(2026, 7, 31), tmp_path
+        )
+
+
+def test_strict_combine_rejects_a_different_report_type(tmp_path):
+    wrong = tmp_path / "wrong.xls"
+    wrong.write_text(
+        "Order Number,Recipient,Bottle Size (mL),Dispense Date\n"
+        "ORD1,HOS1: Facility,120,2026-07-01\n"
+    )
+    with pytest.raises(ValueError, match="dispensation"):
+        core.combine_files(
+            "deposit_record", [wrong], date(2026, 7, 1), date(2026, 7, 31), tmp_path
+        )

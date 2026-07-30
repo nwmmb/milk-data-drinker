@@ -1,13 +1,13 @@
 import sys
 
-from milk_data_drinker.downloader import cli
-from milk_data_drinker.downloader.core import DownloadResult
+from timeless_downloader import cli
+from timeless_downloader.core import DownloadResult
 
 
 def test_cli_preview_uses_shared_core_without_cookie(monkeypatch, capsys):
     answers = iter(["", "", "", "", ""])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(answers))
-    monkeypatch.setattr(sys, "argv", ["mdd-download-cli", "--dry-run"])
+    monkeypatch.setattr(sys, "argv", ["timeless-download-cli", "--dry-run"])
     seen = []
 
     def fake_run(settings, callback):

@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "milk-data-drinker"
+name = "timeless-downloader-utility"
 dynamic = ["version"]
-description = "Parse Timeless MMBMS, Lactoscope analyzer, and Jotform report files into normalized pandas DataFrames"
+description = "Download Timeless MMBMS reports in reliable time-windowed batches"
 requires-python = ">=3.10"
 dependencies = [
     "pandas",
@@ -19,11 +19,13 @@ download = ["requests", "tkcalendar>=1.6.1"]
 dev = ["pytest"]
 
 [project.scripts]
-mdd-download = "milk_data_drinker.downloader:main"
-mdd-download-cli = "milk_data_drinker.downloader.cli:main"
+timeless-download = "timeless_downloader:main"
+timeless-download-cli = "timeless_downloader.cli:main"
+mdd-download = "timeless_downloader:deprecated_main"
+mdd-download-cli = "timeless_downloader:deprecated_cli_main"
 
 [tool.setuptools.dynamic]
-version = {attr = "milk_data_drinker._version.__version__"}
+version = {attr = "timeless_downloader._version.__version__"}
 
 [tool.setuptools.packages.find]
-include = ["milk_data_drinker*"]
+include = ["timeless_downloader*"]

@@ -1,4 +1,4 @@
-from milk_data_drinker.downloader.cookies import (
+from timeless_downloader.cookies import (
     forget_cookie,
     remember_cookie,
     resolve_cookie,

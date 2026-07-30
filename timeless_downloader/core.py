@@ -20,9 +20,6 @@ DELAY = 3.0
 MAX_RETRIES = 3
 RETRY_BACKOFF = (5, 15, 30)
 
-# Number of trailing summary/total rows Timeless appends per report type.
-_COMBINE_SUMMARY_ROWS = {"deposit_record": 2, "dispensation": 4}
-
 REPORT_TYPES = {
     "donor_information": {
         "path": "/reports/donor_information_report/report.php",
@@ -588,26 +585,6 @@ def _download_window(
         _record_status("failed", None, result, callback)
 
 
-def _read_raw(report_type: str, file_path: Path) -> "pd.DataFrame":
-    """Read a Timeless report with format recovery only, preserving original column names."""
-    from milk_data_drinker.timeless._normalizer import normalize
-
-    import pandas as pd
-
-    df = normalize(str(file_path))
-
-    tail = _COMBINE_SUMMARY_ROWS.get(report_type, 0)
-    if tail and len(df) > tail:
-        df = df.iloc[:-tail].reset_index(drop=True)
-
-    if report_type == "batch_summary" and "Batch" in df.columns:
-        df = df[~df["Batch"].astype(str).str.startswith("Page")].reset_index(
-            drop=True
-        )
-
-    return df
-
-
 def combine_files(
     report_name: str,
     file_paths: list[Path],
@@ -623,13 +600,21 @@ def combine_files(
     """
     import pandas as pd
 
+    from .source_format import prepare_source_report
+
     frames = []
+    ordered_columns: list[str] | None = None
     for path in file_paths:
-        try:
-            frames.append(_read_raw(report_name, path))
-        except Exception as exc:
-            if result:
-                _emit(callback, "log", result, f"Could not combine {path.name}: {exc}")
+        frame = prepare_source_report(report_name, path)
+        columns = [str(column) for column in frame.columns]
+        if ordered_columns is None:
+            ordered_columns = columns
+        elif columns != ordered_columns:
+            raise ValueError(
+                f"Cannot combine {path.name}: ordered source columns differ from "
+                f"{file_paths[0].name}."
+            )
+        frames.append(frame)
     if not frames:
         if result:
             _emit(callback, "log", result, "No files could be parsed for combination.")
@@ -648,7 +633,22 @@ def combine_files(
     output_path = output_dir / (
         f"{report_name}_combined_{range_start:%Y-%m-%d}_to_{range_end:%Y-%m-%d}.xlsx"
     )
-    combined.to_excel(output_path, index=False)
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        combined.to_excel(writer, sheet_name="Combined Data", index=False)
+        metadata = pd.DataFrame(
+            [
+                ("artifact_type", "combined"),
+                ("report_type", report_name),
+                ("format_version", "1"),
+            ]
+        )
+        metadata.to_excel(
+            writer,
+            sheet_name="_timeless_downloader_metadata",
+            index=False,
+            header=False,
+        )
+        writer.book["_timeless_downloader_metadata"].sheet_state = "hidden"
     if result:
         _emit(
             callback,
