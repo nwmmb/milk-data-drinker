@@ -15,11 +15,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-download = ["requests"]
+download = ["requests", "tkcalendar>=1.6.1"]
 dev = ["pytest"]
 
 [project.scripts]
 mdd-download = "milk_data_drinker.downloader:main"
+mdd-download-cli = "milk_data_drinker.downloader.cli:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "milk_data_drinker._version.__version__"}

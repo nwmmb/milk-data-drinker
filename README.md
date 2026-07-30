@@ -10,10 +10,16 @@ On Windows:
 2. Double-click `run-downloader.bat`.
 
 The launcher creates `.venv` inside the repository, installs the downloader and its
-dependencies only inside that environment, and starts the interactive menu. It reuses
+dependencies only inside that environment, and opens the graphical interface. It reuses
 the same environment on later runs; nothing is installed into the machine-wide Python.
 
-To preview a run from Command Prompt without downloading reports:
+For a text-mode CLI instead of the GUI:
+
+```bat
+run-downloader.bat --cli
+```
+
+To preview a run without downloading reports:
 
 ```bat
 run-downloader.bat --dry-run
@@ -26,7 +32,7 @@ Windows:
 ```bat
 py -3 -m venv .venv
 .venv\Scripts\python.exe -m pip install -e ".[download]"
-.venv\Scripts\python.exe -m milk_data_drinker.downloader
+.venv\Scripts\mdd-download.exe
 ```
 
 macOS or Linux:
@@ -34,7 +40,7 @@ macOS or Linux:
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[download]"
-.venv/bin/python -m milk_data_drinker.downloader
+.venv/bin/mdd-download
 ```
 
 These commands do use `pip`, because Python dependencies still need to be installed,
@@ -64,7 +70,7 @@ From the downloaded repository, use the launcher:
 run-downloader.bat
 ```
 
-The downloader walks you through an interactive menu to download Timeless MMBMS reports in time-windowed batches (weekly, monthly, quarterly) to avoid the system hanging on large exports. See `milk_data_drinker/downloader/README.md` for full documentation.
+The downloader provides a graphical interface (with a text-mode CLI fallback) for downloading Timeless MMBMS reports in time-windowed batches (weekly, monthly, quarterly) to avoid the system hanging on large exports. See `milk_data_drinker/downloader/README.md` for full documentation.
 
 ## Supported report types
 
@@ -81,7 +87,7 @@ The downloader walks you through an interactive menu to download Timeless MMBMS 
 | `wastage_report` | Timeless MMBMS | `timeless/wastage.py` |
 | `batch_summary` | Timeless MMBMS | `timeless/batch_summary.py` |
 
-Report type is auto-detected by directory name, filename, or column fingerprinting.
+Report type is auto-detected by directory name, filename, or column fingerprinting. See [docs/report-types.md](docs/report-types.md) for original column schemas, ingestion transforms, and known quirks per report type.
 
 ## Development
 

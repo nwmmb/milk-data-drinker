@@ -13,14 +13,19 @@ if not exist ".venv\Scripts\python.exe" (
     if errorlevel 1 goto :setup_error
 )
 
-".venv\Scripts\python.exe" -c "import milk_data_drinker, requests" >nul 2>nul
-if errorlevel 1 (
-    echo Installing downloader dependencies inside .venv...
-    ".venv\Scripts\python.exe" -m pip install -e ".[download]"
-    if errorlevel 1 goto :setup_error
-)
+if not exist ".venv\.mdd-packaged-v2" goto :install
+".venv\Scripts\python.exe" -I -c "import milk_data_drinker, requests, tkcalendar" >nul 2>nul
+if errorlevel 1 goto :install
+goto :launch
 
-".venv\Scripts\python.exe" -m milk_data_drinker.downloader %*
+:install
+echo Installing downloader dependencies inside .venv...
+".venv\Scripts\python.exe" -m pip install ".[download]"
+if errorlevel 1 goto :setup_error
+type nul > ".venv\.mdd-packaged-v2"
+
+:launch
+".venv\Scripts\python.exe" -I -m milk_data_drinker.downloader %*
 exit /b %errorlevel%
 
 :setup_error

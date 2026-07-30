@@ -1,95 +1,142 @@
-"""Check for updates via GitHub Releases and offer to install them."""
+"""Noninteractive discovery and installation of official release wheels."""
+
+from __future__ import annotations
 
 import json
-import logging
+import os
 import subprocess
 import sys
 import tempfile
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
+from urllib.parse import urlparse
 
 from .._version import __version__
 
-log = logging.getLogger(__name__)
-
-_RELEASES_URL = (
+RELEASES_URL = (
     "https://api.github.com/repos/nwmmb/milk-data-drinker/releases/latest"
 )
-_TIMEOUT = 5
+TIMEOUT = 5
 
 
-def _fetch_latest() -> dict | None:
-    try:
-        req = urllib.request.Request(
-            _RELEASES_URL,
-            headers={"Accept": "application/vnd.github+json"},
+class UpdateError(RuntimeError):
+    """A recoverable update discovery or installation failure."""
+
+
+@dataclass(frozen=True)
+class UpdateInfo:
+    tag: str
+    version: tuple[int, ...]
+    notes: str
+    wheel_url: str | None
+
+
+def fetch_latest_release() -> dict:
+    request = urllib.request.Request(
+        RELEASES_URL,
+        headers={"Accept": "application/vnd.github+json"},
+    )
+    with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        return json.loads(response.read())
+
+
+def parse_version(tag: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in tag.lstrip("v").split("."))
+
+
+def _is_official_wheel_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == "github.com"
+        and parsed.path.startswith(
+            "/nwmmb/milk-data-drinker/releases/download/"
         )
-        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
-            return json.loads(resp.read())
-    except Exception:
-        return None
+        and Path(parsed.path).name.endswith(".whl")
+    )
 
 
-def _parse_version(tag: str) -> tuple[int, ...]:
-    return tuple(int(x) for x in tag.lstrip("v").split("."))
-
-
-def _find_wheel_url(release: dict) -> str | None:
+def find_wheel_url(release: dict) -> str | None:
     for asset in release.get("assets", []):
-        if asset["name"].endswith(".whl"):
-            return asset["browser_download_url"]
+        name = str(asset.get("name", ""))
+        url = str(asset.get("browser_download_url", ""))
+        if (
+            name.startswith("milk_data_drinker-")
+            and name.endswith(".whl")
+            and _is_official_wheel_url(url)
+        ):
+            return url
     return None
 
 
-def check_for_update() -> None:
-    release = _fetch_latest()
-    if release is None:
-        return
-
-    tag = release.get("tag_name", "")
+def check_for_update(
+    *,
+    fetcher: Callable[[], dict] = fetch_latest_release,
+    current_version: str = __version__,
+) -> UpdateInfo | None:
+    """Return update metadata, or None when current/offline/invalid."""
     try:
-        latest = _parse_version(tag)
-        current = _parse_version(__version__)
-    except (ValueError, AttributeError):
-        return
-
+        release = fetcher()
+        tag = str(release.get("tag_name", ""))
+        latest = parse_version(tag)
+        current = parse_version(current_version)
+    except Exception:
+        return None
     if latest <= current:
-        return
+        return None
+    return UpdateInfo(
+        tag=tag,
+        version=latest,
+        notes=str(release.get("body", "")).strip(),
+        wheel_url=find_wheel_url(release),
+    )
 
-    print(f"\n  A new version is available: {tag} (you have v{__version__})")
-    body = release.get("body", "").strip()
-    if body:
-        for line in body.splitlines()[:3]:
-            print(f"    {line}")
 
+def install_update(
+    update: UpdateInfo,
+    *,
+    executable: str = sys.executable,
+    downloader: Callable[[str, str | Path], object] = urllib.request.urlretrieve,
+    runner: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+) -> None:
+    """Install an official wheel into the environment running the app."""
+    if Path(executable).parent.parent.name != ".venv":
+        raise UpdateError("Update Now requires the launcher private .venv.")
+    if not update.wheel_url or not _is_official_wheel_url(update.wheel_url):
+        raise UpdateError(
+            f"{update.tag} has no official wheel. You can keep using this version."
+        )
     try:
-        answer = input("  Update now? [Y/n]: ").strip().lower()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        return
-
-    if answer and answer != "y":
-        return
-
-    wheel_url = _find_wheel_url(release)
-    if wheel_url:
-        print(f"  Downloading {Path(wheel_url).name}...")
-        with tempfile.TemporaryDirectory() as tmp:
-            whl_path = Path(tmp) / Path(wheel_url).name
-            urllib.request.urlretrieve(wheel_url, whl_path)
-            subprocess.run(
-                [sys.executable, "-m", "pip", "install", "--upgrade", str(whl_path)],
+        with tempfile.TemporaryDirectory() as temp_dir:
+            wheel_path = Path(temp_dir) / Path(
+                urlparse(update.wheel_url).path
+            ).name
+            downloader(update.wheel_url, wheel_path)
+            runner(
+                [
+                    executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--upgrade",
+                    "--no-deps",
+                    str(wheel_path),
+                ],
                 check=True,
             )
-    else:
-        install_url = (
-            f"git+https://github.com/nwmmb/milk-data-drinker.git@{tag}"
-        )
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--upgrade",
-             f"milk-data-drinker[download] @ {install_url}"],
-            check=True,
-        )
+    except Exception as exc:
+        raise UpdateError(f"Update failed: {exc}") from exc
 
-    print("\n  Updated successfully. Please restart to use the new version.")
-    sys.exit(0)
+
+def restart_application(
+    *,
+    executable: str = sys.executable,
+    execv: Callable[[str, list[str]], object] = os.execv,
+) -> None:
+    """Replace the current process with an isolated-mode GUI process."""
+    execv(
+        executable,
+        [executable, "-I", "-m", "milk_data_drinker.downloader"],
+    )

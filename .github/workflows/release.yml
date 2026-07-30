@@ -17,6 +17,11 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Test
+        run: |
+          pip install -e ".[dev,download]"
+          pytest tests/
+
       - name: Build wheel
         run: |
           pip install build
