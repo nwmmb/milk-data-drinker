@@ -90,7 +90,10 @@ def test_missing_wheel_and_install_failure_are_recoverable():
         )
 
     with pytest.raises(UpdateError, match="no official wheel"):
-        install_update(UpdateInfo("v0.2.0", (0, 2, 0), "", None))
+        install_update(
+            UpdateInfo("v0.2.0", (0, 2, 0), "", None),
+            executable="C:/app/.venv/Scripts/python.exe",
+        )
 
     def fail_download(_url, _path):
         raise OSError("network unavailable")
@@ -98,6 +101,7 @@ def test_missing_wheel_and_install_failure_are_recoverable():
     with pytest.raises(UpdateError, match="network unavailable"):
         install_update(
             UpdateInfo("v0.2.0", (0, 2, 0), "", WHEEL_URL),
+            executable="C:/app/.venv/Scripts/python.exe",
             downloader=fail_download,
         )
 
